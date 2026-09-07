@@ -3,7 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const path = require("path");
-
+const helmet = require("helmet")
 const connectDB = require("./config/db");
 const { connectRedis } = require("./config/redis");
 
@@ -32,9 +32,10 @@ async function startServer() {
 
   // Apply general rate limiting to all requests
   app.use(generalLimiter);
+  app.use(helmet())
 
   // Serve uploaded images statically, e.g. http://localhost:3000/uploads/photo.png
-  app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+  app.use("/uploads", express.static("uploads"));
 
   // Health check (useful for load balancer / uptime checks)
   app.get("/", (req, res) => {
@@ -43,7 +44,7 @@ async function startServer() {
 
   // Routes
   app.use("/api/users", userRoutes);
-  app.use("/api/upload", uploadRoutes);
+  app.use("/api", uploadRoutes);
 
   // 404 handler for unmatched routes
   app.use((req, res) => {

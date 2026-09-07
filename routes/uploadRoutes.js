@@ -1,11 +1,9 @@
 const express = require("express");
 const upload = require("../middlewares/upload");
-const protect = require("../middlewares/authMiddleware");
-const { uploadProfileImage } = require("../controllers/uploadController");
+const { uploadImage } = require("../controllers/uploadController"); // adjust path to match your project
 
 const router = express.Router();
 
-// "image" must match the form-data field name the client sends
-router.post("/profile-image", protect, upload.single("image"), uploadProfileImage);
+router.post("/upload", upload.single("image"), uploadImage);
 
 module.exports = router;
