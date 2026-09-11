@@ -2,11 +2,6 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const User = require("../models/userModel");
-const { redisClient } = require("../config/redis");
-
-const PROFILE_CACHE_TTL = 300; // 5 minutes
-
-const profileCacheKey = (userId) => `user:profile:${userId}`;
 
 // Register User
 const registerUser = async (req, res, next) => {
@@ -110,30 +105,12 @@ const loginUser = async (req, res, next) => {
 };
 
 // GET PROFILE
-// Protected route - Redis read-through cache
-
+// Protected route - reads directly from MongoDB
 const getProfile = async (req, res, next) => {
   try {
     // Get user ID from JWT middleware
     const userId = req.userId;
 
-    // Create Redis key
-    const key = `user:profile:${userId}`;
-
-    // 1. Check Redis
-    const cachedUser = await redisClient.get(key);
-
-    if (cachedUser) {
-      // User found in Redis
-      return res.status(200).json({
-        success: true,
-        user: JSON.parse(cachedUser),
-        fromCache: true,
-      });
-    }
-
-    // 2. User not found in Redis
-    // Get user from MongoDB
     const user = await User.findById(userId).select("-password");
 
     if (!user) {
@@ -143,25 +120,15 @@ const getProfile = async (req, res, next) => {
       });
     }
 
-    // 3. Save user in Redis for 5 minutes
-    await redisClient.setEx(
-      key,
-      300,
-      JSON.stringify(user)
-    );
-
-    // 4. Send user to client
     return res.status(200).json({
       success: true,
       user: user,
-      fromCache: false,
     });
 
   } catch (error) {
     next(error);
   }
 };
-
 
 module.exports = {
   registerUser,
